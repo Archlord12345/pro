@@ -1,0 +1,62 @@
+-- SCHEMA COMPLET POUR SUPABASE (ETS PRO INFORMATIQUE)
+
+-- 1. EXTENSIONS
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- 2. TABLES DES SERVICES
+CREATE TABLE services (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  title TEXT NOT NULL,
+  category TEXT NOT NULL, -- 'Impression', 'Design', 'Maintenance', 'Cyber'
+  description TEXT NOT NULL,
+  long_description TEXT,
+  icon_code INT NOT NULL,
+  price_range TEXT,
+  features TEXT[] DEFAULT '{}',
+  delivery_time TEXT,
+  image_url TEXT, -- Photos de réalisations réelles (portfolio)
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 3. TABLES DES PRODUITS
+CREATE TABLE products (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  name TEXT NOT NULL,
+  brand TEXT,
+  category TEXT NOT NULL, -- 'PC', 'Imprimantes', 'Accessoires', 'Consommables'
+  price_value NUMERIC(10, 2) NOT NULL,
+  price_display TEXT NOT NULL,
+  description TEXT,
+  image_url TEXT NOT NULL,
+  rating FLOAT8 DEFAULT 5.0,
+  stock_quantity INT DEFAULT 0,
+  is_available BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 4. TABLE DES COMMANDES
+CREATE TABLE orders (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  client_name TEXT NOT NULL,
+  client_phone TEXT NOT NULL,
+  item_type TEXT NOT NULL, -- 'service' or 'product'
+  item_id UUID NOT NULL,
+  status TEXT DEFAULT 'En attente', -- 'En attente', 'En production', 'Prêt', 'Livré'
+  total_price NUMERIC(10, 2),
+  file_url TEXT, -- Pour l'upload de fichiers à imprimer
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 5. TABLE DES DEVIS ET CONTACTS
+CREATE TABLE quotes (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  client_name TEXT NOT NULL,
+  client_phone TEXT NOT NULL,
+  service_requested TEXT,
+  details TEXT,
+  file_url TEXT,
+  is_processed BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
