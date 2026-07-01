@@ -41,6 +41,19 @@ class _ProductsScreenState extends State<ProductsScreen> with SingleTickerProvid
   @override
   Widget build(BuildContext context) {
     final appProvider = Provider.of<AppProvider>(context);
+    final width = MediaQuery.of(context).size.width;
+    int crossAxisCount = 2;
+    double childAspectRatio = 0.75;
+    if (width > 1200) {
+      crossAxisCount = 4;
+      childAspectRatio = 0.75;
+    } else if (width > 800) {
+      crossAxisCount = 3;
+      childAspectRatio = 0.75;
+    } else if (width > 600) {
+      crossAxisCount = 2;
+      childAspectRatio = 0.8;
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -55,9 +68,9 @@ class _ProductsScreenState extends State<ProductsScreen> with SingleTickerProvid
               onRefresh: () => appProvider.fetchData(),
               child: GridView.builder(
                 padding: const EdgeInsets.all(24),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 0.75,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  childAspectRatio: childAspectRatio,
                   crossAxisSpacing: 16,
                   mainAxisSpacing: 16,
                 ),
@@ -100,45 +113,74 @@ class _ProductsScreenState extends State<ProductsScreen> with SingleTickerProvid
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Expanded(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                                  image: DecorationImage(
-                                    image: NetworkImage(product.imageUrl),
-                                    fit: BoxFit.cover,
-                                    onError: (_, __) {},
-                                  ),
-                                ),
-                                child: product.imageUrl.isEmpty 
-                                  ? const Center(child: Icon(Icons.image_not_supported)) 
-                                  : null,
+                              flex: 3,
+                              child: ClipRRect(
+                                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                                child: product.imageUrl.isNotEmpty 
+                                  ? Image.network(
+                                      product.imageUrl,
+                                      fit: BoxFit.cover,
+                                      width: double.infinity,
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return Container(
+                                          color: AppColors.primary.withValues(alpha: 0.1),
+                                          child: const Center(
+                                            child: Icon(Icons.image_not_supported, color: AppColors.primary, size: 40),
+                                          ),
+                                        );
+                                      },
+                                    )
+                                  : Container(
+                                      color: AppColors.primary.withValues(alpha: 0.1),
+                                      child: const Center(
+                                        child: Icon(Icons.shopping_bag, color: AppColors.primary, size: 40),
+                                      ),
+                                    ),
                               ),
                             ),
-                            Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    product.name,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    product.priceDisplay,
-                                    style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.star, color: Colors.amber, size: 14),
-                                      const SizedBox(width: 4),
-                                      Text(rating.toStringAsFixed(1), style: const TextStyle(fontSize: 12)),
-                                    ],
-                                  ),
-                                ],
+                            Expanded(
+                              flex: 2,
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          product.name,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          product.category,
+                                          style: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.7), fontSize: 12),
+                                        ),
+                                      ],
+                                    ),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          product.priceDisplay,
+                                          style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 18),
+                                        ),
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(Icons.star, color: Colors.amber, size: 16),
+                                            const SizedBox(width: 4),
+                                            Text(rating.toStringAsFixed(1), style: const TextStyle(fontSize: 14)),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
