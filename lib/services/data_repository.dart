@@ -1,15 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
-import 'package:sqflite/sqflite.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import '../models/service.dart';
 import '../models/product.dart';
 import '../models/review.dart';
 import '../models/cyber_session.dart';
-import 'database_helper.dart';
+import 'local_cache_service.dart';
 
 class DataRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final _dbHelper = DatabaseHelper.instance;
+  final LocalCacheService _localCacheService = createLocalCacheService();
 
   // --- Services ---
 
@@ -22,23 +21,12 @@ class DataRepository {
         return Service.fromMap(data);
       }).toList();
 
-      await _syncServicesLocal(services);
+      await _localCacheService.syncServices(services);
       return services;
     } catch (e) {
       debugPrint('Error getting services: $e');
       return [];
     }
-  }
-
-  Future<void> _syncServicesLocal(List<Service> services) async {
-    if (kIsWeb) return; // Skip local sync on web
-    final db = await _dbHelper.database;
-    await db.transaction((txn) async {
-      await txn.delete('services');
-      for (var service in services) {
-        await txn.insert('services', service.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
-      }
-    });
   }
 
   Future<void> addService(Service service) async {
@@ -76,23 +64,12 @@ class DataRepository {
         return Product.fromMap(data);
       }).toList();
 
-      await _syncProductsLocal(products);
+      await _localCacheService.syncProducts(products);
       return products;
     } catch (e) {
       debugPrint('Error getting products: $e');
       return [];
     }
-  }
-
-  Future<void> _syncProductsLocal(List<Product> products) async {
-    if (kIsWeb) return; // Skip local sync on web
-    final db = await _dbHelper.database;
-    await db.transaction((txn) async {
-      await txn.delete('products');
-      for (var product in products) {
-        await txn.insert('products', product.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
-      }
-    });
   }
 
   Future<void> addProduct(Product product) async {
