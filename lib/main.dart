@@ -8,6 +8,7 @@ import 'screens/services_screen.dart';
 import 'screens/products_screen.dart';
 import 'screens/contact_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/admin_login_screen.dart';
 import 'screens/admin_panel_screen.dart';
 import 'screens/cyber_cafe_screen.dart';
 import 'screens/splash_screen.dart';
@@ -53,7 +54,8 @@ class ProInformatiqueApp extends StatelessWidget {
       routes: {
         '/': (context) => const SplashScreen(),
         '/main': (context) => const AdaptiveNavigation(),
-        '/admin': (context) => const AdminPanelScreen(),
+        '/admin': (context) => const AdminLoginScreen(),
+        '/admin/panel': (context) => const AdminPanelScreen(),
       },
     );
   }
@@ -141,14 +143,6 @@ class _AdaptiveNavigationState extends State<AdaptiveNavigation> with SingleTick
         actions: [
           for (int i = 0; i < _screenTitles.length; i++)
             _buildWebNavItem(i),
-          const SizedBox(width: 16),
-          TextButton.icon(
-            onPressed: () {
-              Navigator.of(context).pushNamed('/admin');
-            },
-            icon: const Icon(Icons.admin_panel_settings, color: Colors.white),
-            label: const Text('Admin', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
           const SizedBox(width: 16),
         ],
       ),

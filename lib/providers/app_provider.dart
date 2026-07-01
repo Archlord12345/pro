@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/service.dart';
 import '../models/product.dart';
 import '../models/review.dart';
@@ -7,6 +8,7 @@ import '../services/data_repository.dart';
 
 class AppProvider with ChangeNotifier {
   final DataRepository _repository = DataRepository();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   List<Service> _services = [];
   List<Product> _products = [];
@@ -14,6 +16,7 @@ class AppProvider with ChangeNotifier {
   List<CyberTicket> _cyberTickets = [];
   List<Computer> _computers = [];
   bool _isLoading = false;
+  String _adminPassword = 'admin';
 
   List<Service> get services => _services;
   List<Product> get products => _products;
@@ -32,6 +35,7 @@ class AppProvider with ChangeNotifier {
       _reviews = await _repository.getReviews();
       _cyberTickets = await _repository.getCyberTickets();
       _computers = await _repository.getComputers();
+      await fetchAdminPassword();
     } catch (e) {
       debugPrint('Error fetching data: $e');
       _services = [];
@@ -43,6 +47,40 @@ class AppProvider with ChangeNotifier {
 
     _isLoading = false;
     notifyListeners();
+  }
+
+  Future<void> fetchAdminPassword() async {
+    try {
+      final doc = await _firestore.collection('settings').doc('admin').get();
+      if (doc.exists) {
+        _adminPassword = doc.data()?['password'] ?? 'admin';
+      } else {
+        // Initialize password if doesn't exist
+        await _firestore.collection('settings').doc('admin').set({
+          'password': 'admin',
+        });
+      }
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error fetching admin password: $e');
+    }
+  }
+
+  Future<void> changeAdminPassword(String newPassword) async {
+    try {
+      await _firestore.collection('settings').doc('admin').update({
+        'password': newPassword,
+      });
+      _adminPassword = newPassword;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error changing admin password: $e');
+      rethrow;
+    }
+  }
+
+  bool verifyAdminPassword(String enteredPassword) {
+    return enteredPassword == _adminPassword;
   }
 
   // --- Services CRUD ---

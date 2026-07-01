@@ -39,6 +39,10 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
     _animationController.forward();
+    // Fetch data on init
+    Future.microtask(() {
+      context.read<AppProvider>().fetchData();
+    });
   }
 
   @override
@@ -188,6 +192,25 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                         _buildNavItem(3, Icons.reviews_rounded, 'Avis', isWeb),
                       ],
                     ),
+                  ),
+                  // Change Password Button
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: isWeb ? 16 : 8),
+                    child: isWeb
+                        ? ListTile(
+                            leading: const Icon(Icons.lock_reset, color: Colors.white),
+                            title: const Text('Changer mot de passe', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                            onTap: () => _showChangePasswordDialog(),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            hoverColor: Colors.white.withValues(alpha: 0.1),
+                          )
+                        : IconButton(
+                            icon: const Icon(Icons.lock_reset, color: Colors.white),
+                            onPressed: () => _showChangePasswordDialog(),
+                            tooltip: 'Changer mot de passe',
+                          ),
                   ),
                   // Logout Button
                   Padding(
@@ -1277,5 +1300,274 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
       endTime: !computer.isAvailable ? null : computer.endTime,
     );
     await context.read<AppProvider>().updateComputer(updatedComputer);
+  }
+
+  void _showChangePasswordDialog() {
+    final _formKey = GlobalKey<FormState>();
+    final _currentPasswordController = TextEditingController();
+    final _newPasswordController = TextEditingController();
+    final _confirmPasswordController = TextEditingController();
+    bool _isCurrentPasswordVisible = false;
+    bool _isNewPasswordVisible = false;
+    bool _isConfirmPasswordVisible = false;
+    bool _isChangingPassword = false;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            elevation: 0,
+            child: Container(
+              width: 450,
+              constraints: const BoxConstraints(maxHeight: 550),
+              padding: const EdgeInsets.all(32),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Changer le mot de passe',
+                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 32),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Current Password
+                            TextFormField(
+                              controller: _currentPasswordController,
+                              obscureText: !_isCurrentPasswordVisible,
+                              decoration: InputDecoration(
+                                labelText: 'Mot de passe actuel',
+                                labelStyle: const TextStyle(color: AppColors.textSecondary),
+                                prefixIcon: const Icon(Icons.lock_outlined, color: AppColors.primary),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _isCurrentPasswordVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                  onPressed: () {
+                                    setDialogState(() {
+                                      _isCurrentPasswordVisible = !_isCurrentPasswordVisible;
+                                    });
+                                  },
+                                ),
+                                filled: true,
+                                fillColor: Colors.grey[50],
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Veuillez entrer le mot de passe actuel';
+                                }
+                                if (!context.read<AppProvider>().verifyAdminPassword(value)) {
+                                  return 'Mot de passe actuel incorrect';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            // New Password
+                            TextFormField(
+                              controller: _newPasswordController,
+                              obscureText: !_isNewPasswordVisible,
+                              decoration: InputDecoration(
+                                labelText: 'Nouveau mot de passe',
+                                labelStyle: const TextStyle(color: AppColors.textSecondary),
+                                prefixIcon: const Icon(Icons.lock_reset, color: AppColors.primary),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _isNewPasswordVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                  onPressed: () {
+                                    setDialogState(() {
+                                      _isNewPasswordVisible = !_isNewPasswordVisible;
+                                    });
+                                  },
+                                ),
+                                filled: true,
+                                fillColor: Colors.grey[50],
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Veuillez entrer un nouveau mot de passe';
+                                }
+                                if (value.length < 4) {
+                                  return 'Le mot de passe doit contenir au moins 4 caractères';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            // Confirm Password
+                            TextFormField(
+                              controller: _confirmPasswordController,
+                              obscureText: !_isConfirmPasswordVisible,
+                              decoration: InputDecoration(
+                                labelText: 'Confirmer le nouveau mot de passe',
+                                labelStyle: const TextStyle(color: AppColors.textSecondary),
+                                prefixIcon: const Icon(Icons.lock_outlined, color: AppColors.primary),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _isConfirmPasswordVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                  onPressed: () {
+                                    setDialogState(() {
+                                      _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                                    });
+                                  },
+                                ),
+                                filled: true,
+                                fillColor: Colors.grey[50],
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Veuillez confirmer le mot de passe';
+                                }
+                                if (value != _newPasswordController.text) {
+                                  return 'Les mots de passe ne correspondent pas';
+                                }
+                                return null;
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text('Annuler', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: _isChangingPassword
+                                ? null
+                                : () async {
+                                    if (_formKey.currentState!.validate()) {
+                                      setDialogState(() => _isChangingPassword = true);
+                                      try {
+                                        await context.read<AppProvider>().changeAdminPassword(_newPasswordController.text);
+                                        if (mounted) {
+                                          Navigator.pop(context);
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('Mot de passe changé avec succès!'),
+                                              backgroundColor: AppColors.primary,
+                                              behavior: SnackBarBehavior.floating,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      } catch (e) {
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text('Erreur lors du changement de mot de passe: $e'),
+                                              backgroundColor: AppColors.cardPink,
+                                              behavior: SnackBarBehavior.floating,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      } finally {
+                                        setDialogState(() => _isChangingPassword = false);
+                                      }
+                                    }
+                                  },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: _isChangingPassword
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Text(
+                                    'Changer',
+                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 }

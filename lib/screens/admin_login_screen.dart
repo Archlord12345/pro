@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../constants.dart';
+import '../providers/app_provider.dart';
 import 'admin_panel_screen.dart';
 
 class AdminLoginScreen extends StatefulWidget {
@@ -12,14 +13,9 @@ class AdminLoginScreen extends StatefulWidget {
 
 class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
   bool _isLoading = false;
-
-  // Admin credentials (in a real app, these should be stored securely, e.g., in Firestore with authentication)
-  static const String adminEmail = 'admin@proinformatique.com';
-  static const String adminPassword = 'admin1234';
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -44,7 +40,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
   @override
   void dispose() {
     _animationController.dispose();
-    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -53,10 +48,9 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
 
-      // Simulate network delay
-      await Future.delayed(const Duration(seconds: 1));
-
-      if (_emailController.text == adminEmail && _passwordController.text == adminPassword) {
+      final appProvider = Provider.of<AppProvider>(context, listen: false);
+      
+      if (appProvider.verifyAdminPassword(_passwordController.text)) {
         if (mounted) {
           Navigator.pushReplacement(
             context,
@@ -67,8 +61,8 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Identifiants incorrects !'),
-              backgroundColor: Colors.red,
+              content: Text('Mot de passe incorrect!'),
+              backgroundColor: AppColors.cardPink,
               duration: Duration(seconds: 3),
             ),
           );
@@ -157,48 +151,12 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Connectez-vous pour accéder au panneau',
+                          'Entrez le mot de passe pour accéder au panneau',
                           style: AppTextStyles.body.copyWith(
                             fontSize: 14,
                           ),
                         ),
                         const SizedBox(height: 40),
-
-                        // Email Field
-                        TextFormField(
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          decoration: InputDecoration(
-                            labelText: 'Email',
-                            labelStyle: const TextStyle(color: AppColors.textSecondary),
-                            prefixIcon: const Icon(Icons.email_outlined, color: AppColors.primary),
-                            filled: true,
-                            fillColor: Colors.grey[50],
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide.none,
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide.none,
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(color: AppColors.primary, width: 2),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Veuillez entrer votre email';
-                            }
-                            if (!value.contains('@')) {
-                              return 'Veuillez entrer un email valide';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 24),
 
                         // Password Field
                         TextFormField(
@@ -237,10 +195,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Veuillez entrer votre mot de passe';
-                            }
-                            if (value.length < 6) {
-                              return 'Le mot de passe doit contenir au moins 6 caractères';
+                              return 'Veuillez entrer le mot de passe';
                             }
                             return null;
                           },
@@ -281,7 +236,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
                         ),
                         const SizedBox(height: 24),
 
-                        // Demo Credentials Info
+                        // Demo Info
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
@@ -289,26 +244,10 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
                           ),
-                          child: Column(
-                            children: [
-                              Text(
-                                'Identifiants de démonstration :',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Email: $adminEmail',
-                                style: AppTextStyles.body,
-                              ),
-                              Text(
-                                'Mot de passe: $adminPassword',
-                                style: AppTextStyles.body,
-                              ),
-                            ],
+                          child: const Text(
+                            'Mot de passe par défaut: admin',
+                            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                            textAlign: TextAlign.center,
                           ),
                         ),
                       ],
