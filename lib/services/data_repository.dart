@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:sqflite/sqflite.dart';
 import '../models/service.dart';
 import '../models/product.dart';
@@ -31,6 +31,7 @@ class DataRepository {
   }
 
   Future<void> _syncServicesLocal(List<Service> services) async {
+    if (kIsWeb) return; // Skip local sync on web
     final db = await _dbHelper.database;
     await db.transaction((txn) async {
       await txn.delete('services');
@@ -84,6 +85,7 @@ class DataRepository {
   }
 
   Future<void> _syncProductsLocal(List<Product> products) async {
+    if (kIsWeb) return; // Skip local sync on web
     final db = await _dbHelper.database;
     await db.transaction((txn) async {
       await txn.delete('products');
