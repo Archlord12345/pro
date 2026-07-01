@@ -21,6 +21,7 @@ class AppColors {
   static const Color cardPurple = deepBlue;
   static const Color cardTeal = skyBlue;
   static const Color cardOrange = yellow;
+  static const Color cardPink = Color(0xFFE63946);
   
   static const LinearGradient primaryGradient = LinearGradient(
     colors: [deepBlue, skyBlue],

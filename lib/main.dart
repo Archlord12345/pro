@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'constants.dart';
 import 'screens/home_screen.dart';
@@ -9,16 +9,16 @@ import 'screens/products_screen.dart';
 import 'screens/contact_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/admin_panel_screen.dart';
+import 'screens/cyber_cafe_screen.dart';
 import 'screens/splash_screen.dart';
-import 'services/supabase_config.dart';
+import 'firebase_options.dart';
 import 'providers/app_provider.dart';
+import 'models/business_info.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  await Supabase.initialize(
-    url: SupabaseConfig.url,
-    anonKey: SupabaseConfig.anonKey,
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
   );
 
   runApp(
@@ -35,7 +35,7 @@ class ProInformatiqueApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Pro Informatique',
+      title: 'Ets PRO INFORMATIQUE',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primaryColor: AppColors.primary,
@@ -52,40 +52,131 @@ class ProInformatiqueApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => const SplashScreen(),
-        '/main': (context) => kIsWeb ? const AdminPanelScreen() : const MainNavigation(),
+        '/main': (context) => const AdaptiveNavigation(),
+        '/admin': (context) => const AdminPanelScreen(),
       },
     );
   }
 }
 
-class MainNavigation extends StatefulWidget {
-  const MainNavigation({super.key});
+class AdaptiveNavigation extends StatefulWidget {
+  const AdaptiveNavigation({super.key});
 
   @override
-  State<MainNavigation> createState() => _MainNavigationState();
+  State<AdaptiveNavigation> createState() => _AdaptiveNavigationState();
 }
 
-class _MainNavigationState extends State<MainNavigation> {
+class _AdaptiveNavigationState extends State<AdaptiveNavigation> with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+  final BusinessInfo _businessInfo = const BusinessInfo();
 
   final List<Widget> _screens = [
     const HomeScreen(),
     const ServicesScreen(),
+    const CyberCafeScreen(),
     const ProductsScreen(),
     const ContactScreen(),
     const ProfileScreen(),
   ];
 
+  final List<String> _screenTitles = [
+    'Accueil',
+    'Nos Services',
+    'Cyber Café',
+    'Nos Produits',
+    'Nous Contacter',
+    'Profil',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.2).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.elasticOut),
+    );
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    if (_selectedIndex != index) {
+      setState(() {
+        _selectedIndex = index;
+      });
+      _animationController.forward(from: 0);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    return kIsWeb ? _buildWebLayout() : _buildMobileLayout();
+  }
+
+  Widget _buildWebLayout() {
     return Scaffold(
-      body: _screens[_selectedIndex],
+      appBar: AppBar(
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: Image.asset('logo.png', height: 40),
+            ),
+            Text(_businessInfo.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        actions: [
+          for (int i = 0; i < _screenTitles.length; i++)
+            _buildWebNavItem(i),
+          const SizedBox(width: 16),
+          TextButton.icon(
+            onPressed: () {
+              Navigator.of(context).pushNamed('/admin');
+            },
+            icon: const Icon(Icons.admin_panel_settings, color: Colors.white),
+            label: const Text('Admin', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(width: 16),
+        ],
+      ),
+      body: IndexedStack(index: _selectedIndex, children: _screens),
+    );
+  }
+
+  Widget _buildWebNavItem(int index) {
+    bool isSelected = _selectedIndex == index;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: TextButton(
+        onPressed: () => _onItemTapped(index),
+        style: TextButton.styleFrom(
+          foregroundColor: isSelected ? Colors.white : Colors.white70,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
+        child: Text(_screenTitles[index], style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout() {
+    return Scaffold(
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _screens,
+      ),
       bottomNavigationBar: Container(
         height: 80,
         decoration: BoxDecoration(
@@ -102,64 +193,88 @@ class _MainNavigationState extends State<MainNavigation> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildNavItem(0, Icons.home_outlined, Icons.home_rounded),
-            _buildNavItem(1, Icons.miscellaneous_services_outlined, Icons.miscellaneous_services_rounded),
+            _buildNavItem(0, Icons.home_outlined, Icons.home_rounded, 'Accueil'),
+            _buildNavItem(1, Icons.miscellaneous_services_outlined, Icons.miscellaneous_services_rounded, 'Services'),
             _buildCenterNavItem(),
-            _buildNavItem(3, Icons.contact_support_outlined, Icons.contact_support_rounded),
-            _buildNavItem(4, Icons.person_outline_rounded, Icons.person_rounded),
+            _buildNavItem(3, Icons.shopping_bag_outlined, Icons.shopping_bag_rounded, 'Produits'),
+            _buildNavItem(4, Icons.contact_support_outlined, Icons.contact_support_rounded, 'Contact'),
+            _buildNavItem(5, Icons.person_outline_rounded, Icons.person_rounded, 'Profil'),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, IconData activeIcon) {
+  Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label) {
     bool isSelected = _selectedIndex == index;
     return GestureDetector(
       onTap: () => _onItemTapped(index),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            isSelected ? activeIcon : icon,
-            color: isSelected ? AppColors.primary : AppColors.textSecondary.withValues(alpha: 0.5),
-            size: 28,
-          ),
-          if (isSelected)
-            Container(
-              margin: const EdgeInsets.only(top: 4),
-              height: 4,
-              width: 4,
-              decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
-            )
-        ],
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedScale(
+              scale: isSelected ? 1.1 : 1.0,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.elasticOut,
+              child: Icon(
+                isSelected ? activeIcon : icon,
+                color: isSelected ? AppColors.primary : AppColors.textSecondary.withValues(alpha: 0.5),
+                size: 28,
+              ),
+            ),
+            if (isSelected)
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                margin: const EdgeInsets.only(top: 4),
+                height: 4,
+                width: 12,
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.all(Radius.circular(2)),
+                ),
+              )
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildCenterNavItem() {
+    bool isSelected = _selectedIndex == 2;
     return GestureDetector(
       onTap: () => _onItemTapped(2),
-      child: Container(
-        padding: const EdgeInsets.all(4),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.elasticOut,
+        padding: EdgeInsets.all(isSelected ? 3 : 4),
         decoration: BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.3),
-              blurRadius: 15,
+              color: isSelected ? AppColors.primary.withValues(alpha: 0.4) : AppColors.primary.withValues(alpha: 0.3),
+              blurRadius: isSelected ? 20 : 15,
               offset: const Offset(0, 5),
             )
           ],
         ),
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
           padding: const EdgeInsets.all(12),
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: AppColors.primaryGradient,
             shape: BoxShape.circle,
+            border: isSelected ? Border.all(color: Colors.white, width: 3) : null,
           ),
-          child: const Icon(Icons.shopping_bag_rounded, color: Colors.white, size: 30),
+          child: const Icon(Icons.computer, color: Colors.white, size: 30),
         ),
       ),
     );

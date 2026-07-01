@@ -28,23 +28,22 @@ class Service {
     };
   }
 
+  // For SQLite (features stored as JSON string)
   factory Service.fromMap(Map<String, dynamic> map) {
+    List<String> featureList;
+    if (map['features'] is String) {
+      featureList = List<String>.from(jsonDecode(map['features']));
+    } else if (map['features'] is List) {
+      featureList = List<String>.from(map['features']);
+    } else {
+      featureList = [];
+    }
     return Service(
       id: map['id'],
       title: map['title'],
       description: map['description'],
       iconCode: map['icon_code'],
-      features: List<String>.from(jsonDecode(map['features'])),
-    );
-  }
-
-  factory Service.fromSupabase(Map<String, dynamic> map) {
-     return Service(
-      id: map['id'].toString(),
-      title: map['title'],
-      description: map['description'],
-      iconCode: map['icon_code'],
-      features: List<String>.from(map['features'] ?? []),
+      features: featureList,
     );
   }
 }
@@ -53,29 +52,29 @@ final List<Service> proServices = [
   Service(
     id: '1',
     title: 'Impression Grand Format',
-    description: 'Qualité haute définition pour votre communication visuelle.',
+    description: 'Banderoles, Roll-ups, Affiches publicitaires, Autocollants. Qualité haute définition pour votre communication.',
     iconCode: Icons.format_size.codePoint,
     features: ['Banderoles', 'Roll-ups', 'Affiches publicitaires', 'Autocollants'],
   ),
   Service(
     id: '2',
     title: 'Infographie & Design',
-    description: 'Création graphique professionnelle pour tous vos supports.',
+    description: 'Création de logos, flyers, dépliants, cartes de visite et maquettes professionnelles.',
     iconCode: Icons.design_services.codePoint,
-    features: ['Logos', 'Flyers', 'Cartes de visite', 'Maquettes'],
+    features: ['Logos', 'Flyers', 'Dépliants', 'Cartes de visite', 'Maquettes'],
   ),
   Service(
     id: '3',
     title: 'Gadgets Personnalisés',
-    description: 'Idéal pour vos cadeaux d\'entreprise et événements.',
+    description: 'T-shirts, Casquettes, Stylos, Mugs, Porte-clés. Idéal pour vos cadeaux d\'entreprise.',
     iconCode: Icons.card_giftcard.codePoint,
-    features: ['T-shirts', 'Casquettes', 'Mugs', 'Stylos & Porte-clés'],
+    features: ['T-shirts', 'Casquettes', 'Stylos', 'Mugs', 'Porte-clés'],
   ),
   Service(
     id: '4',
-    title: 'Bureautique & Cyber',
-    description: 'Services complets de secrétariat et accès internet.',
+    title: 'Cyber Café / Bureautique',
+    description: 'Saisie, reliure, plastification, photocopie, scan, et accès internet haut débit.',
     iconCode: Icons.print.codePoint,
-    features: ['Saisie & Reliure', 'Plastification', 'Photocopie', 'Scan'],
+    features: ['Saisie', 'Reliure', 'Plastification', 'Photocopie', 'Scan', 'Accès internet'],
   ),
 ];

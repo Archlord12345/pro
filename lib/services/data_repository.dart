@@ -1,27 +1,32 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:sqflite/sqflite.dart';
 import '../models/service.dart';
 import '../models/product.dart';
+import '../models/review.dart';
+import '../models/cyber_session.dart';
 import 'database_helper.dart';
 
 class DataRepository {
-  final _supabase = Supabase.instance.client;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final _dbHelper = DatabaseHelper.instance;
 
   // --- Services ---
 
   Future<List<Service>> getServices() async {
     try {
-      // Try to fetch from Supabase
-      final response = await _supabase.from('services').select();
-      final services = response.map((data) => Service.fromSupabase(data)).toList();
+      final QuerySnapshot snapshot = await _firestore.collection('services').get();
+      final services = snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        data['id'] = doc.id;
+        return Service.fromMap(data);
+      }).toList();
 
-      // Sync with local DB
       await _syncServicesLocal(services);
       return services;
     } catch (e) {
-      // If offline or error, fetch from local SQLite
-      return await _getServicesLocal();
+      debugPrint('Error getting services: $e');
+      return [];
     }
   }
 
@@ -35,23 +40,46 @@ class DataRepository {
     });
   }
 
-  Future<List<Service>> _getServicesLocal() async {
-    final db = await _dbHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query('services');
-    return maps.map((map) => Service.fromMap(map)).toList();
+  Future<void> addService(Service service) async {
+    try {
+      await _firestore.collection('services').doc(service.id).set(service.toMap());
+    } catch (e) {
+      debugPrint('Error adding service: $e');
+    }
+  }
+
+  Future<void> updateService(Service service) async {
+    try {
+      await _firestore.collection('services').doc(service.id).update(service.toMap());
+    } catch (e) {
+      debugPrint('Error updating service: $e');
+    }
+  }
+
+  Future<void> deleteService(String id) async {
+    try {
+      await _firestore.collection('services').doc(id).delete();
+    } catch (e) {
+      debugPrint('Error deleting service: $e');
+    }
   }
 
   // --- Products ---
 
   Future<List<Product>> getProducts() async {
     try {
-      final response = await _supabase.from('products').select();
-      final products = response.map((data) => Product.fromSupabase(data)).toList();
+      final QuerySnapshot snapshot = await _firestore.collection('products').get();
+      final products = snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        data['id'] = doc.id;
+        return Product.fromMap(data);
+      }).toList();
 
       await _syncProductsLocal(products);
       return products;
     } catch (e) {
-      return await _getProductsLocal();
+      debugPrint('Error getting products: $e');
+      return [];
     }
   }
 
@@ -65,9 +93,142 @@ class DataRepository {
     });
   }
 
-  Future<List<Product>> _getProductsLocal() async {
-    final db = await _dbHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query('products');
-    return maps.map((map) => Product.fromMap(map)).toList();
+  Future<void> addProduct(Product product) async {
+    try {
+      await _firestore.collection('products').doc(product.id).set(product.toMap());
+    } catch (e) {
+      debugPrint('Error adding product: $e');
+    }
+  }
+
+  Future<void> updateProduct(Product product) async {
+    try {
+      await _firestore.collection('products').doc(product.id).update(product.toMap());
+    } catch (e) {
+      debugPrint('Error updating product: $e');
+    }
+  }
+
+  Future<void> deleteProduct(String id) async {
+    try {
+      await _firestore.collection('products').doc(id).delete();
+    } catch (e) {
+      debugPrint('Error deleting product: $e');
+    }
+  }
+
+  // --- Reviews ---
+
+  Future<List<Review>> getReviews() async {
+    try {
+      final QuerySnapshot snapshot = await _firestore.collection('reviews').get();
+      return snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        data['id'] = doc.id;
+        return Review.fromMap(data);
+      }).toList();
+    } catch (e) {
+      debugPrint('Error getting reviews: $e');
+      return [];
+    }
+  }
+
+  Future<List<Review>> getReviewsForProduct(String productId) async {
+    try {
+      final QuerySnapshot snapshot = await _firestore
+          .collection('reviews')
+          .where('product_id', isEqualTo: productId)
+          .get();
+      return snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        data['id'] = doc.id;
+        return Review.fromMap(data);
+      }).toList();
+    } catch (e) {
+      debugPrint('Error getting reviews for product: $e');
+      return [];
+    }
+  }
+
+  Future<void> addReview(Review review) async {
+    try {
+      await _firestore.collection('reviews').doc(review.id).set(review.toMap());
+    } catch (e) {
+      debugPrint('Error adding review: $e');
+    }
+  }
+
+  Future<void> deleteReview(String id) async {
+    try {
+      await _firestore.collection('reviews').doc(id).delete();
+    } catch (e) {
+      debugPrint('Error deleting review: $e');
+    }
+  }
+
+  // --- Cyber Tickets ---
+
+  Future<List<CyberTicket>> getCyberTickets() async {
+    try {
+      final QuerySnapshot snapshot = await _firestore.collection('cyber_tickets').get();
+      final tickets = snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        data['id'] = doc.id;
+        return CyberTicket.fromMap(data);
+      }).toList();
+      return tickets;
+    } catch (e) {
+      debugPrint('Error getting cyber tickets: $e');
+      return [];
+    }
+  }
+
+  Future<void> addCyberTicket(CyberTicket ticket) async {
+    try {
+      await _firestore.collection('cyber_tickets').doc(ticket.id).set(ticket.toMap());
+    } catch (e) {
+      debugPrint('Error adding ticket: $e');
+    }
+  }
+
+  Future<void> updateCyberTicket(CyberTicket ticket) async {
+    try {
+      await _firestore.collection('cyber_tickets').doc(ticket.id).update(ticket.toMap());
+    } catch (e) {
+      debugPrint('Error updating ticket: $e');
+    }
+  }
+
+  Future<void> deleteCyberTicket(String id) async {
+    try {
+      await _firestore.collection('cyber_tickets').doc(id).delete();
+    } catch (e) {
+      debugPrint('Error deleting ticket: $e');
+    }
+  }
+
+  // --- Computers ---
+
+  Future<List<Computer>> getComputers() async {
+    try {
+      final QuerySnapshot snapshot = await _firestore.collection('computers').get();
+      final computers = snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        data['id'] = doc.id;
+        return Computer.fromMap(data);
+      }).toList();
+      return computers;
+    } catch (e) {
+      debugPrint('Error getting computers: $e');
+      return [];
+    }
+  }
+
+  Future<void> updateComputer(Computer computer) async {
+    try {
+      await _firestore.collection('computers').doc(computer.id).update(computer.toMap());
+    } catch (e) {
+      debugPrint('Error updating computer: $e');
+    }
   }
 }
