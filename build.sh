@@ -1,5 +1,6 @@
 #!/bin/bash
 ./install_flutter.sh && ./flutter/bin/flutter build web --release \
+  --no-tree-shake-icons \
   --dart-define=FIREBASE_API_KEY="$FIREBASE_API_KEY" \
   --dart-define=FIREBASE_AUTH_DOMAIN="$FIREBASE_AUTH_DOMAIN" \
   --dart-define=FIREBASE_PROJECT_ID="$FIREBASE_PROJECT_ID" \
